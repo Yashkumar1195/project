@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escape The Hacker's Network - 2D Cybersecurity Escape Room (PBL-1)</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div id="game-viewport">
+    <div id="crt-overlay"></div>
+    <div id="scanline"></div>
+
+    <!-- ==================== SCENARIO 1: MAIN MENU ==================== -->
+    <section id="screen-main-menu" class="game-screen active">
+      <div class="menu-bg"></div>
+      <div class="cyber-grid-floor"></div>
+
+      <!-- Left Character: Detective Player -->
+      <div class="menu-character-left">
+        <img src="assets/hd/Characters_HD/Player_Portrait_512.png" alt="Detective" class="char-banner-img glow-cyan">
+        <div class="char-tag">DETECTIVE [YOU]</div>
+      </div>
+
+      <!-- Right Character: AIRI AI Mentor -->
+      <div class="menu-character-right">
+        <img src="assets/hd/Characters_HD/AIRI_Portrait_512.png" alt="AIRI Mentor" class="char-banner-img glow-blue">
+        <div class="char-tag">AIRI // AI MENTOR</div>
+      </div>
+
+      <!-- Center Control Panel -->
+      <div class="menu-center-panel">
+        <div class="glitch-title-box">
+          <div class="title-sub">2D CYBERSECURITY ESCAPE-ROOM // PBL PROJECT</div>
+          <h1 class="main-title">ESCAPE THE<br>HACKER'S NETWORK</h1>
+          <div class="title-status-line">
+            <span class="blinking-dot red"></span>
+            <span class="text-red">THREAT DETECTED:</span> MALICIOUS ENTITY [ZERO]
+          </div>
+        </div>
+
+        <div class="menu-buttons">
+          <button id="btn-start-game" class="cyber-btn primary">
+            <span class="btn-corner tl"></span><span class="btn-corner br"></span>
+            <span class="btn-text">▶ START INVESTIGATION</span>
+          </button>
+          <button id="btn-mission-brief" class="cyber-btn">
+            <span class="btn-corner tl"></span><span class="btn-corner br"></span>
+            <span class="btn-text">📜 MISSION BRIEFING</span>
+          </button>
+          <button id="btn-how-to-play" class="cyber-btn">
+            <span class="btn-corner tl"></span><span class="btn-corner br"></span>
+            <span class="btn-text">🎮 CONTROLS & OBJECTIVES</span>
+          </button>
+          <button id="btn-sound-toggle" class="cyber-btn">
+            <span class="btn-corner tl"></span><span class="btn-corner br"></span>
+            <span class="btn-text">🔊 AUDIO: ON</span>
+          </button>
+        </div>
+
+        <div class="menu-footer">
+          <div>PROJECT DEMO READY • UNITY 6 URP 2D PIPELINE ARCHITECTURE</div>
+          <button id="btn-fullscreen-toggle" class="fullscreen-link">⛶ TOGGLE FULLSCREEN (1920x1080)</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SCENARIO 2: 2D CYBER ROOM EXPLORATION ==================== -->
+    <section id="screen-room" class="game-screen">
+      <!-- 2D Canvas for Room & Player Rendering -->
+      <canvas id="room-canvas" width="1920" height="1080"></canvas>
+
+      <!-- HUD Top Bar -->
+      <header id="game-hud">
+        <!-- Player Status -->
+        <div class="hud-box hud-player">
+          <img src="assets/unity_sprites/Characters/Player_Header_Avatar.png" alt="Avatar" class="hud-avatar">
+          <div class="hud-info">
+            <div class="player-name">CYBER DETECTIVE</div>
+            <div class="player-level"><span class="badge-tag" id="hud-level-badge">LVL 1</span> <span id="hud-level-title">SECURITY ANALYST</span></div>
+            <div class="health-bar-wrap">
+              <div class="health-bar-fill" style="width: 100%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mission Objective -->
+        <div class="hud-box hud-objective">
+          <div class="box-label">CURRENT MISSION</div>
+          <div id="hud-objective-text" class="box-content pulse-text">Investigate compromised email terminal (Press E near terminal)</div>
+        </div>
+
+        <!-- Stats (Timer & Score) -->
+        <div class="hud-box hud-stats">
+          <div class="stat-col">
+            <div class="stat-label">COUNTDOWN</div>
+            <div id="hud-timer" class="stat-val timer-val">05:00</div>
+          </div>
+          <div class="stat-col">
+            <div class="stat-label">SCORE</div>
+            <div id="hud-score" class="stat-val score-val">0000</div>
+          </div>
+        </div>
+
+        <!-- Utility Controls -->
+        <div class="hud-controls">
+          <button id="btn-hud-audio" class="icon-btn" title="Toggle Audio">🔊</button>
+          <button id="btn-hud-menu" class="icon-btn" title="Return to Menu">⚙</button>
+        </div>
+      </header>
+
+      <!-- Floating Prompts for World Objects -->
+      <div id="interaction-prompt" class="interaction-popup hidden">
+        <div class="prompt-icon">E</div>
+        <div class="prompt-text">PRESS <span class="key-highlight">[E]</span> TO ACCESS TERMINAL</div>
+      </div>
+
+      <div id="door-prompt" class="interaction-popup red-prompt hidden">
+        <div class="prompt-icon">🔒</div>
+        <div class="prompt-text">FIREWALL LOCKED: Complete Level 1 at terminal first!</div>
+      </div>
+
+      <!-- Room 3 Door Prompt -->
+      <div id="door3-prompt" class="interaction-popup red-prompt hidden">
+        <div class="prompt-icon">🔒</div>
+        <div class="prompt-text">LAB LOCKED: Complete Level 2 first!</div>
+      </div>
+
+      <!-- Movement Hint -->
+      <div class="hud-movement-hint">
+        <span class="key-badge">W</span> <span class="key-badge">A</span> <span class="key-badge">S</span> <span class="key-badge">D</span> / <span class="key-badge">ARROWS</span> TO MOVE
+      </div>
+
+      <!-- Bottom AIRI Dialogue Box -->
+      <footer class="airi-dialogue-container">
+        <div class="airi-avatar-box">
+          <img src="assets/unity_sprites/Characters/AIRI_Header_Avatar.png" alt="AIRI" class="airi-face">
+          <div class="airi-nametag">AIRI // MENTOR</div>
+        </div>
+        <div class="airi-content-box">
+          <div class="airi-status-line">
+            <span class="pulsing-led"></span> NEURAL MENTOR LINK: ACTIVE
+          </div>
+          <div id="airi-dialogue-text" class="airi-typing-text">
+            "Detective, ZERO has injected malicious emails into our corporate server! Walk over to the central desk terminal and press [E] to begin your investigation."
+          </div>
+        </div>
+      </footer>
+    </section>
+
+    <!-- ==================== SCENARIO 3: LEVEL 1 PHISHING TERMINAL MODAL ==================== -->
+    <div id="modal-phishing" class="cyber-modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-window email-client-window">
+        <!-- Title Bar -->
+        <div class="terminal-bar">
+          <div class="terminal-title">
+            <span>📧</span> TERMINAL OS v6.2 // PHISHING DETECTIVE CONSOLE [LEVEL 1]
+          </div>
+          <div class="terminal-controls">
+            <span class="terminal-badge">REQUIREMENT: 4/5 CORRECT</span>
+            <button id="btn-close-phishing" class="terminal-close-btn">✕</button>
+          </div>
+        </div>
+
+        <!-- Main Email Client Layout -->
+        <div class="email-app-layout">
+          <!-- Sidebar: Queue of 5 Emails -->
+          <aside class="email-sidebar">
+            <div class="inbox-header">
+              <span>INBOX QUEUE (5)</span>
+              <span class="filter-pill">UNRESOLVED</span>
+            </div>
+            <ul id="email-list" class="email-list">
+              <!-- Rendered via JS -->
+            </ul>
+            <div class="sidebar-footer">
+              <div class="progress-bar-label">
+                <span>VERIFICATION PROGRESS</span>
+                <span id="phishing-progress-text">0/5 Solved</span>
+              </div>
+              <div class="mini-progress-track">
+                <div id="phishing-progress-fill" class="mini-progress-bar" style="width: 0%;"></div>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Main Email Content Viewer -->
+          <main class="email-main-pane">
+            <div class="email-viewer">
+              <div class="email-meta-header">
+                <div class="meta-row">
+                  <span class="meta-label">FROM:</span>
+                  <span id="email-from" class="meta-val highlight-sender"></span>
+                  <button id="btn-inspect-headers" class="cyber-btn-small">🔍 INSPECT HEADERS</button>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-label">TO:</span>
+                  <span class="meta-val">security-ops@organization.internal</span>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-label">SUBJECT:</span>
+                  <span id="email-subject" class="meta-val font-bold"></span>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-label">DATE:</span>
+                  <span id="email-date" class="meta-val"></span>
+                  <span id="email-security-tag" class="security-flag">UNVERIFIED SOURCE</span>
+                </div>
+              </div>
+
+              <!-- Email Body -->
+              <div id="email-body-content" class="email-body-card">
+                <!-- Text populated via JS -->
+              </div>
+
+              <!-- Hyperlink Hover Inspector -->
+              <div class="link-inspector-bar">
+                <span class="inspector-label">URL PREVIEW INSPECTOR:</span>
+                <span id="inspected-url" class="inspector-url">[Hover over any link above to inspect actual target URL]</span>
+              </div>
+
+              <!-- Action Decision Bar -->
+              <div class="email-action-bar">
+                <div class="action-info">Determine if this email is a social engineering attack or genuine communication:</div>
+                <div class="action-btns">
+                  <button id="btn-report-phishing" class="cyber-btn danger-btn">
+                    <span class="btn-corner tl"></span><span class="btn-corner br"></span>
+                    <span class="btn-text">🚨 REPORT PHISHING ATTACK</span>
+                  </button>
+                  <button id="btn-mark-safe" class="cyber-btn success-btn">
+                    <span class="btn-corner tl"></span><span class="btn-corner br"></span>
+                    <span class="btn-text">🛡️ VERIFY AS LEGITIMATE</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Instant Feedback Overlay -->
+            <div id="email-feedback-overlay" class="feedback-overlay hidden">
+              <div class="feedback-box">
+                <div id="feedback-icon" class="feedback-icon correct">✓</div>
+                <div id="feedback-title" class="feedback-title">CORRECT IDENTIFICATION</div>
+                <div id="feedback-score-diff" class="feedback-score-tag plus">+200 POINTS</div>
+                <p id="feedback-explanation" class="feedback-explanation">Explanation text goes here.</p>
+                <div id="feedback-cyber-tip" class="feedback-tips">CYBER DEFENSE RULE: Always verify the domain carefully.</div>
+                <button id="btn-feedback-next" class="cyber-btn primary">
+                  <span class="btn-corner tl"></span><span class="btn-corner br"></span>
+                  <span class="btn-text">CONTINUE INVESTIGATION ▶</span>
+                </button>
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== SCENARIO 4: LEVEL 2 PASSWORD FORTRESS MODAL ==================== -->
+    <div id="modal-password" class="cyber-modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-window password-fortress-window">
+        <!-- Title Bar -->
+        <div class="terminal-bar">
+          <div class="terminal-title">
+            <span>🏰</span> FIREWALL DEFENSE // PASSWORD FORTRESS [LEVEL 2]
+          </div>
+          <div class="terminal-controls">
+            <button id="btn-close-password" class="terminal-close-btn">✕</button>
+          </div>
+        </div>
+
+        <div class="password-app-layout">
+          <!-- Left Column: Password Comparison Challenge -->
+          <div class="pass-input-col">
+            <div class="fortress-header-text">
+              <h3>SECURE THE SYSTEM GATEWAY</h3>
+              <p>Construct a bulletproof encryption passphrase to activate the firewall and lock out ZERO.</p>
+            </div>
+
+            <!-- Step 1: Password Comparison Challenge -->
+            <div id="password-comparison-challenge" class="password-comparison-section">
+              <div class="card-title">STEP 1: IDENTIFY THE STRONGEST PASSWORD</div>
+              <p class="comparison-instruction">Evaluate the following passwords. Select the strongest one:</p>
+              <div class="password-options">
+                <button class="password-option-btn" data-pw-index="0">
+                  <code>password123</code>
+                  <span class="pw-tag pw-hidden-tag"></span>
+                </button>
+                <button class="password-option-btn" data-pw-index="1">
+                  <code>Cyber2026</code>
+                  <span class="pw-tag pw-hidden-tag"></span>
+                </button>
+                <button class="password-option-btn" data-pw-index="2">
+                  <code>Violet!Orbit7#Maple</code>
+                  <span class="pw-tag pw-hidden-tag"></span>
+                </button>
+              </div>
+              <div id="comparison-feedback" class="comparison-feedback hidden"></div>
+            </div>
+
+            <!-- Step 2: Password Creation (shown after comparison) -->
+            <div id="password-creation-section" class="password-creation-section hidden">
+              <div class="card-title">STEP 2: CREATE YOUR OWN FORTRESS PASSWORD</div>
+              <div class="password-field-group">
+                <label for="input-password">ENTER NEW DEFENSE PASSPHRASE:</label>
+                <div class="input-with-button">
+                  <input id="input-password" type="password" placeholder="Type a strong password here..." autocomplete="off">
+                  <button id="btn-toggle-pass-visibility" class="toggle-eye-btn" title="Toggle visibility">👁</button>
+                </div>
+              </div>
+
+              <!-- 5-Tier Strength Meter -->
+              <div class="strength-meter-section">
+                <div class="meter-header">
+                  <span>FIREWALL INTEGRITY:</span>
+                  <span id="strength-label" class="tier-tag tier-0">ENTER PASSWORD</span>
+                </div>
+                <div class="meter-track">
+                  <div id="meter-bar-0" class="meter-segment"></div>
+                  <div id="meter-bar-1" class="meter-segment"></div>
+                  <div id="meter-bar-2" class="meter-segment"></div>
+                  <div id="meter-bar-3" class="meter-segment"></div>
+                  <div id="meter-bar-4" class="meter-segment"></div>
+                </div>
+              </div>
+
+              <!-- Estimated Brute-Force Crack Time -->
+              <div class="crack-time-card">
+                <div class="crack-time-label">ESTIMATED SUPERCOMPUTER CRACK TIME:</div>
+                <div id="crack-time-value" class="crack-time-display text-red">INSTANT (0.0001 SEC)</div>
+                <div class="entropy-sub">Calculated Entropy: <span id="entropy-bits">0</span> bits</div>
+              </div>
+
+              <button id="btn-deploy-password" class="cyber-btn success-btn full-width" disabled>
+                <span class="btn-corner tl"></span><span class="btn-corner br"></span>
+                <span class="btn-text">🔒 DEPLOY FIREWALL PASSWORD (REACH FORTRESS TIER)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Column: Security Checklist Rules -->
+          <div class="pass-rules-col">
+            <div class="rules-card">
+              <div class="card-title">SECURITY CRITERIA CHECKLIST</div>
+              <ul class="rules-list">
+                <li id="rule-length" class="rule-item invalid">
+                  <span class="rule-icon">✕</span>
+                  <span>Minimum 10 characters (14+ recommended)</span>
+                </li>
+                <li id="rule-upper-lower" class="rule-item invalid">
+                  <span class="rule-icon">✕</span>
+                  <span>Both UPPERCASE & lowercase letters</span>
+                </li>
+                <li id="rule-number" class="rule-item invalid">
+                  <span class="rule-icon">✕</span>
+                  <span>At least one number (0-9)</span>
+                </li>
+                <li id="rule-symbol" class="rule-item invalid">
+                  <span class="rule-icon">✕</span>
+                  <span>At least one special symbol (!@#$%^&*)</span>
+                </li>
+                <li id="rule-dictionary" class="rule-item invalid">
+                  <span class="rule-icon">✕</span>
+                  <span>No common words or dictionary patterns (e.g. password, rahul, admin)</span>
+                </li>
+                <li id="rule-consecutive" class="rule-item invalid">
+                  <span class="rule-icon">✕</span>
+                  <span>No consecutive duplicate characters (e.g. aaa, 111)</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Password Comparison Box -->
+            <div class="password-examples-box">
+              <div class="example-title">CYBER DEFENSE COMPARISON</div>
+              <div class="pass-example bad">
+                <span class="rule-icon">❌</span>
+                <div>
+                  <code>password123 / rahul2004</code>
+                  <div class="ex-desc">Cracked in &lt;1 sec via dictionary wordlists.</div>
+                </div>
+              </div>
+              <div class="pass-example good">
+                <span class="rule-icon">✔</span>
+                <div>
+                  <code>S@fe#Code2026!Fortress</code>
+                  <div class="ex-desc">Over 100+ bits entropy. Takes 40+ million years to crack.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== SCENARIO 5: LEVEL 3 MALWARE INVESTIGATION LAB MODAL ==================== -->
+    <div id="modal-malware" class="cyber-modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-window malware-lab-window">
+        <!-- Title Bar -->
+        <div class="terminal-bar malware-bar">
+          <div class="terminal-title">
+            <span>🔬</span> FORENSICS LAB // MALWARE INVESTIGATION [LEVEL 3]
+          </div>
+          <div class="terminal-controls">
+            <button id="btn-close-malware" class="terminal-close-btn">✕</button>
+          </div>
+        </div>
+
+        <div class="malware-app-layout">
+          <!-- Left: Workstation File List -->
+          <div class="malware-files-col">
+            <div class="fortress-header-text">
+              <h3>⚠ SUSPICIOUS ACTIVITY DETECTED</h3>
+              <p>ZERO has planted a file on this workstation. Inspect each file's properties, identify the threat, and choose the correct containment response.</p>
+            </div>
+
+            <div class="card-title">WORKSTATION FILES</div>
+            <div id="malware-file-list" class="malware-file-list">
+              <!-- Rendered via JS -->
+            </div>
+
+            <div id="malware-step-identify" class="malware-step hidden">
+              <div class="card-title">IDENTIFY THE THREAT</div>
+              <p class="comparison-instruction">Which file is suspicious? Select it below:</p>
+              <div id="malware-identify-btns" class="malware-identify-btns">
+                <!-- Rendered via JS -->
+              </div>
+              <div id="malware-identify-feedback" class="comparison-feedback hidden"></div>
+            </div>
+
+            <div id="malware-step-respond" class="malware-step hidden">
+              <div class="card-title">CHOOSE YOUR RESPONSE</div>
+              <p class="comparison-instruction">How should you handle the suspicious file?</p>
+              <div class="malware-response-btns">
+                <button id="btn-response-open" class="cyber-btn danger-btn malware-response-btn" data-response="open">
+                  <span class="btn-corner tl"></span><span class="btn-corner br"></span>
+                  <span class="btn-text">📂 Open the file to investigate</span>
+                </button>
+                <button id="btn-response-delete" class="cyber-btn malware-response-btn" data-response="delete">
+                  <span class="btn-corner tl"></span><span class="btn-corner br"></span>
+                  <span class="btn-text">🗑️ Delete it immediately</span>
+                </button>
+                <button id="btn-response-isolate" class="cyber-btn success-btn malware-response-btn" data-response="isolate">
+                  <span class="btn-corner tl"></span><span class="btn-corner br"></span>
+                  <span class="btn-text">🔒 Isolate workstation & report file</span>
+                </button>
+              </div>
+              <div id="malware-response-feedback" class="comparison-feedback hidden"></div>
+            </div>
+          </div>
+
+          <!-- Right: File Inspector Panel -->
+          <div class="malware-inspector-col">
+            <div class="rules-card">
+              <div class="card-title">FILE INSPECTOR PANEL</div>
+              <div id="malware-inspector-content" class="malware-inspector-body">
+                <div class="inspector-placeholder">Click on a file to inspect its properties</div>
+              </div>
+            </div>
+
+            <div class="rules-card malware-threat-indicators">
+              <div class="card-title">🚨 THREAT INDICATORS TO WATCH</div>
+              <ul class="rules-list">
+                <li class="rule-item invalid"><span class="rule-icon">⚠</span><span>Unexpected sender or unknown source</span></li>
+                <li class="rule-item invalid"><span class="rule-icon">⚠</span><span>Executable file extensions (.exe, .scr, .bat)</span></li>
+                <li class="rule-item invalid"><span class="rule-icon">⚠</span><span>Mismatched file name and extension</span></li>
+                <li class="rule-item invalid"><span class="rule-icon">⚠</span><span>Files received outside normal workflows</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== SCENARIO 6: REWARD & VICTORY MODAL ==================== -->
+    <div id="modal-reward" class="cyber-modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-window reward-modal-window">
+        <div class="reward-content">
+          <div class="reward-header">
+            <div class="reward-badge-glow">🏆</div>
+            <h2 class="reward-title">CYBER DEFENSE MISSION SUCCESSFUL!</h2>
+            <div class="reward-subtitle">ALL THREATS NEUTRALIZED • ZERO'S ATTACK CONTAINED</div>
+          </div>
+
+          <div class="reward-columns">
+            <!-- AIRI Debrief Card -->
+            <div class="reward-mentor-card">
+              <img src="assets/hd/Characters_HD/AIRI_Portrait_512.png" alt="AIRI Debrief" class="mentor-debrief-avatar">
+              <div class="mentor-speech-bubble">
+                <div class="mentor-speech-name">AIRI // AI MENTOR</div>
+                <p>"Outstanding performance, Detective! You intercepted phishing vectors, fortified our credentials, and contained a malware threat. ZERO's attack has been completely neutralized!"</p>
+              </div>
+            </div>
+
+            <!-- Stats & Badges Unlocked -->
+            <div class="reward-stats-card">
+              <div class="stats-row">
+                <span class="label">FINAL MISSION SCORE:</span>
+                <span id="final-score" class="val highlight-gold">1250 PTS</span>
+              </div>
+              <div class="stats-row">
+                <span class="label">PHISHING ACCURACY:</span>
+                <span id="final-accuracy" class="val">100% (5/5 Correct)</span>
+              </div>
+              <div class="stats-row">
+                <span class="label">FIREWALL INTEGRITY:</span>
+                <span class="val text-green">FORTRESS GRADE</span>
+              </div>
+              <div class="stats-row">
+                <span class="label">MALWARE CONTAINED:</span>
+                <span id="final-malware-status" class="val text-cyan">THREAT ISOLATED</span>
+              </div>
+              <div class="stats-row">
+                <span class="label">SYSTEM STATUS:</span>
+                <span class="val text-cyan">100% SECURE</span>
+              </div>
+
+              <!-- Unlocked Badges -->
+              <div class="badges-unlocked-section">
+                <div class="badges-title">ACHIEVEMENT BADGES EARNED:</div>
+                <div class="badges-row">
+                  <div class="badge-item">
+                    <img src="assets/unity_sprites/Minigames/Badge_Level_Complete.png" alt="Badge" class="badge-img">
+                    <span class="badge-name">Phishing Detective</span>
+                  </div>
+                  <div class="badge-item">
+                    <img src="assets/unity_sprites/InteractiveObjects/Access_Keycard.png" alt="Badge" class="badge-img">
+                    <span class="badge-name">Password Guardian</span>
+                  </div>
+                  <div class="badge-item">
+                    <img src="assets/unity_sprites/InteractiveObjects/Security_Door_Locked.png" alt="Badge" class="badge-img">
+                    <span class="badge-name">Malware Hunter</span>
+                  </div>
+                  <div class="badge-item">
+                    <img src="assets/unity_sprites/InteractiveObjects/Security_Camera.png" alt="Badge" class="badge-img">
+                    <span class="badge-name">Network Defender</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="reward-actions">
+            <button id="btn-replay-demo" class="cyber-btn success-btn">
+              <span class="btn-corner tl"></span><span class="btn-corner br"></span>
+              <span class="btn-text">🔄 REPLAY MISSION DEMO</span>
+            </button>
+            <button id="btn-return-menu" class="cyber-btn">
+              <span class="btn-corner tl"></span><span class="btn-corner br"></span>
+              <span class="btn-text">🏠 RETURN TO MAIN MENU</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== BRIEFING MODAL ==================== -->
+    <div id="modal-briefing" class="cyber-modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-window small-modal">
+        <div class="terminal-bar">
+          <div class="terminal-title"><span>📜</span> MISSION DOSSIER // TOP SECRET</div>
+          <button id="btn-close-briefing" class="terminal-close-btn">✕</button>
+        </div>
+        <div class="modal-body-scroll">
+          <div class="brief-title">THE THREAT: ZERO'S INTRUSION</div>
+          <p>An unknown adversary known as <strong>ZERO</strong> has deployed an encrypted ransomware attack against our core infrastructure. Critical enterprise directories are being held hostage.</p>
+          
+          <div class="brief-title">YOUR OBJECTIVES</div>
+          <ul class="brief-list">
+            <li><strong>Room 1 - Phishing Detective:</strong> Locate the command terminal. Inspect incoming messages, analyze sender addresses and disguised hyperlinks, and report phishing attempts. (Need 4/5 correct).</li>
+            <li><strong>Room 2 - Password Fortress:</strong> Evaluate sample passwords to identify the strongest, then create a multi-entropy defense passphrase to lock the security door before ZERO can brute-force the firewall.</li>
+            <li><strong>Room 3 - Malware Investigation Lab:</strong> Investigate suspicious files on a compromised workstation. Identify the threat and choose the correct containment response before the attack spreads.</li>
+          </ul>
+
+          <div class="brief-title">CONTROLS</div>
+          <p>Use <strong>WASD</strong> or <strong>Arrow Keys</strong> to explore the 2D Cyber Security Room. Approach interactable computers and doors and press <strong>E</strong>.</p>
+
+          <div class="brief-title">STORY PROGRESSION</div>
+          <p><strong>Detect the attack → Secure access → Contain the threat.</strong></p>
+        </div>
+        <div class="modal-foot">
+          <button id="btn-start-from-brief" class="cyber-btn primary">
+            <span class="btn-corner tl"></span><span class="btn-corner br"></span>
+            <span class="btn-text">PROCEED TO CYBER ROOM ▶</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== HEADERS MODAL ==================== -->
+    <div id="modal-headers" class="cyber-modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-window small-modal">
+        <div class="terminal-bar">
+          <div class="terminal-title"><span>🔍</span> RAW EMAIL HEADER ANALYSIS</div>
+          <button id="btn-close-headers" class="terminal-close-btn">✕</button>
+        </div>
+        <div class="modal-body-scroll">
+          <pre id="raw-header-content" class="code-terminal-pre"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== ROOM TRANSITION OVERLAY ==================== -->
+    <div id="room-transition-overlay" class="room-transition-overlay hidden">
+      <div class="transition-content">
+        <div class="transition-icon">🔓</div>
+        <div id="transition-title" class="transition-title">ENTERING NEXT ROOM</div>
+        <div id="transition-subtitle" class="transition-subtitle">Preparing secure environment...</div>
+        <div class="transition-progress">
+          <div class="transition-bar"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
